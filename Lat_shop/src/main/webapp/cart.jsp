@@ -1,5 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=ISO-8859-1" pageEncoding="ISO-8859-1"%>
-<%@ page import="model.Products" %>
+<%@ page import="mvc.products" %>
 <%@ page import="java.util.List" %>
 <!DOCTYPE html>
 <html lang="en">
@@ -7,18 +7,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shopping Cart</title>
-       <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
    <style>
     body {
         font-family: Arial, sans-serif;
         margin: 0;
         padding: 0;
-
+ background-color:pink;
+    background-image:url("https://static.vecteezy.com/system/resources/previews/006/663/095/non_2x/shopping-concept-cartons-or-paper-boxes-and-shopping-bag-in-red-shopping-cart-on-pink-background-online-shopping-consumers-can-shop-from-home-and-delivery-service-with-copy-space-free-photo.jpg");
+     
+    height: 100vh;
     }
 	  .header {
             height: 80px;
             width: 100%;
             background-color: #343a40;
+         
             color: white;
             display: flex;
             align-items: center;
@@ -36,7 +39,7 @@
             border-radius:50px;
         }
     .container {
-        max-width: 500px;
+        max-width: 800px;
         margin: 0 auto;
         padding: 20px;
     }
@@ -117,134 +120,210 @@
 
 </head>
 <body>
-
 <div class="header">
         <img src="shoplogo.jpg" class="logo">
         <center><h1>Online Shopping</h1></center>
         
-    </div>	
+    </div>
 	<br><br>
     <div class="container">
         <h2>Shopping Cart</h2>
-      <% 
-List<model.Products> cartItems = (List<model.Products>) request.getAttribute("cartItems"); // Use request.getAttribute
-if (cartItems != null) {
-    for (model.Products item : cartItems) {
-%>
-<div class="cart-item">
-    <div class="cart-item-details">
-        <img src=<%=item.getProd_image() %>>
-  <p>Total Amount: $<%= request.getAttribute("totalAmount") %></p>
-        <h3><%= item.getProd_title() %></h3>
-        <p>Price: $<%= item.getProd_price() %></p>
-        <button class="remove-button" onclick="removeItem('<%= item.getProd_id() %>')">Remove</button>
-    </div>
-</div>
-   
-<% 
-    }
-}
-%>
-<div>
-        <p>Total Amount: $<%= request.getAttribute("totalAmount") %></p>
-        <p>Total GST: $<%= request.getAttribute("totalGst") %></p>
-        <p>Total Shipping Charges: $<%= request.getAttribute("totalShippingCharges") %></p>
-        <p>Total GST on Shipping Charges: $<%= request.getAttribute("totalGstOnShippingCharges") %></p>
-        <p>Grand Total: $<%= request.getAttribute("grandTotal") %></p>
-    </div>
+        <% 
+        List<mvc.products> cartItems = (List<mvc.products>) request.getSession().getAttribute("cart");
+        if (cartItems != null) {
+            double totalProductPrice = 0.0;
+            for (mvc.products item : cartItems) {
+                totalProductPrice += item.getprice();
+        %>
+        <div class="cart-item">
+            <div class="cart-item-details">
+            <img src=<%=item.getimage() %>>
+                <h3><%= item.getname() %></h3>
+                <p>Price: $<%= item.getprice() %></p>
+                <button class="remove-button" onclick="removeItem('<%= item.getpid() %>')">Remove</button>
+            </div>
+        </div>
+        <% 
+            }
+            
+            double gstOnProducts = totalProductPrice * 0.18; // Assuming GST rate is 18%
+            double shippingCharges = totalProductPrice * 0.05; // Assuming shipping charges are 5% of total product price
+            double gstOnShippingCharges = shippingCharges * 0.18; // Assuming GST rate is 18%
+            double totalBill = totalProductPrice + gstOnProducts + shippingCharges + gstOnShippingCharges;
+        %>
+        <div style="background-color:white;height:200px;margin-top:2px;border-radius:1px">
+            <p>Total Product Price: $<%= totalProductPrice %></p>
+            <p>GST on Products: $<%= gstOnProducts %></p>
+            <p>Shipping Charges: $<%= shippingCharges %></p>
+            <p>GST on Shipping Charges: $<%= gstOnShippingCharges %></p>
+            <h3 id="totalBill" style="display: none;" ><%= totalBill %></h3>
+            <h3>Total Bill: <%=totalBill %></h3>
 
-        <a href="orders.jsp" class="checkout-button">CHECK OUT</a>
-         <a id="rzp-button1" href="#" class="checkout-button" onclick="placeOrder()">Place Order</a>
+        </div>
+        <% } %>
+
+   <table style="border-collapse:collapse;margin-top:50px;" border="1">
+        <thead>
+            <tr>
+				<th>discount</th>
+				<th>product actual price</th>
+				<th>product actual gst</th>
+				<th>price</th>
+				<th>Shipping charge on product</th>
+                <th>Shipping charge with GST</th>
+            </tr>
+        </thead>
+        <tbody>
+    <%
+        for (ProductPriceDetails ppd : lpd) {
+        	shippingAmount=ppd.getShippingamount();
+        	t=ppd.getTotalprice();
+			session.setAttribute("totalcp",t);
+       %>
+    <tr>
+    	<td><div style="text-align:center;"><%= ppd.getDiscount()%></div></td>
+    	<td><div style="text-align:center;"><%= ppd.getProductactualprice()%></div></td>
+    	<td><div style="text-align:center;"><%= ppd.getProductactualgst()%></div></td>
+    	<td><div style="text-align:center;"><%= ppd.getPrice()%></div></td>
+        <td><div style="text-align:center;"><%= ppd.getShippingchargeshare() %></div></td>
+        <td><div style="text-align:center;"><%= ppd.getShippingchargewithgst() %></div></td>
+    </tr>
+    <%
+    }
+    %>
+</tbody>
+ 
+    </table>
+        <a href="final.jsp" class="checkout-button">Check Out</a>
+        <a id="rzp-button1" href="#" class="checkout-button" onclick="placeOrder()">Place Order</a>
+
         
         <a href="ProductServlet" class="checkout-button" onclick="checkout()">Continue shopping</a>
     </div>
     <script>
-   
-  
+
     function placeOrder() {
-        var rzpButton = document.getElementById('rzp-button1');
-     
-        if (rzpButton) {
-            var options = {
-                // Razorpay options here
-                  "key": "rzp_test_GD8S8aHD7CFQUE", // Enter the Key ID generated from the Dashboard
-    	    "amount": "1000",
-    	    "currency": "INR",
-    	    "description": "Online Shopping",
-    	    "image": "https://s3.amazonaws.com/rzp-mobile/images/rzp.jpg",
-    	    "prefill":
-    	    {
-    	      "email": "gaurav.kumar@example.com",
-    	      "contact": +919900000000,
-    	    },
-    	    config: {
-    	      display: {
-    	        blocks: {
-    	          utib: { //name for Axis block
-    	            name: "Pay using Axis Bank",
-    	            instruments: [
-    	              {
-    	                method: "card",
-    	                issuers: ["UTIB"]
-    	              },
-    	              {
-    	                method: "netbanking",
-    	                banks: ["UTIB"]
-    	              },
-    	            ]
-    	          },
-    	          other: { //  name for other block
-    	            name: "Other Payment modes",
-    	            instruments: [
-    	              {
-    	                method: "card",
-    	                issuers: ["ICIC"]
-    	              },
-    	              {
-    	                method: 'netbanking',
-    	              }
-    	            ]
-    	          }
-    	        },
-    	        hide: [
-    	          {
-    	          method: "upi"
-    	          }
-    	        ],
-    	        sequence: ["block.utib", "block.other"],
-    	        preferences: {
-    	          show_default_blocks: false // Should Checkout show its default blocks?
-    	        }
-    	      }
-    	    },
-    	    "handler": function (response) {
-    	      alert(response.razorpay_payment_id);
-    	    },
-    	    "modal": {
-    	      "ondismiss": function () {
-    	        if (confirm("Are you sure, you want to close the form?")) {
-    	          txt = "You pressed OK!";
-    	          console.log("Checkout form closed by the user");
-    	        } else {
-    	          txt = "You pressed Cancel!";
-    	          console.log("Complete the Payment")
-    	        }
-    	      }
-    	    }
-            };
-            var rzp1 = new Razorpay(options);
-            rzpButton.onclick = function (e) {
-                rzp1.open();
-                e.preventDefault();
-            };
-        } else {
-            console.error('Element with ID "rzp-button1" not found');
+        var pincode = prompt("Please enter your pincode:");
+        if (pincode) {
+            var cartItems = document.querySelectorAll('.cart-item');
+            var validPincode = true;
+
+            cartItems.forEach(item => {
+                var productId = item.dataset.productid;
+                fetch('CheckPincodeServlet?pincode=' + pincode + '&productId=' + productId)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.valid) {
+                        validPincode = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking pincode:', error);
+                    validPincode = false;
+                });
+            });
+
+            if (validPincode) {
+            	 var rzpButton = document.getElementById('rzp-button1');
+                 
+                 if (rzpButton) {
+                     var options = {
+                         // Razorpay options here
+                         "key": "rzp_test_GD8S8aHD7CFQUE", // Enter the Key ID generated from the Dashboard
+                         "amount": getTotalBill(), // Call function to get totalBill dynamically
+                         "currency": "INR",
+                         "description": "Online Shopping",
+                         "image": "https://s3.amazonaws.com/rzp-mobile/images/rzp.jpg",
+                         "prefill":
+                         {
+                             "email": "gaurav.kumar@example.com",
+                             "contact": +919900000000,
+                         },
+                         config: {
+                             display: {
+                                 blocks: {
+                                     utib: { //name for Axis block
+                                         name: "Pay using Axis Bank",
+                                         instruments: [
+                                             {
+                                                 method: "card",
+                                                 issuers: ["UTIB"]
+                                             },
+                                             {
+                                                 method: "netbanking",
+                                                 banks: ["UTIB"]
+                                             },
+                                         ]
+                                     },
+                                     other: { //  name for other block
+                                         name: "Other Payment modes",
+                                         instruments: [
+                                             {
+                                                 method: "card",
+                                                 issuers: ["ICIC"]
+                                             },
+                                             {
+                                                 method: 'netbanking',
+                                             }
+                                         ]
+                                     }
+                                 },
+                                 hide: [
+                                     {
+                                         method: "upi"
+                                     }
+                                 ],
+                                 sequence: ["block.utib", "block.other"],
+                                 preferences: {
+                                     show_default_blocks: false // Should Checkout show its default blocks?
+                                 }
+                             }
+                         },
+                         "handler": function (response) {
+                             alert(response.razorpay_payment_id);
+                         },
+                         "modal": {
+                             "ondismiss": function () {
+                                 if (confirm("Are you sure, you want to close the form?")) {
+                                     txt = "You pressed OK!";
+                                     console.log("Checkout form closed by the user");
+                                 } else {
+                                     txt = "You pressed Cancel!";
+                                     console.log("Complete the Payment")
+                                 }
+                             }
+                         }
+                     };
+                     var rzp1 = new Razorpay(options);
+                     rzpButton.onclick = function (e) {
+                         rzp1.open();
+                         e.preventDefault();
+                     };
+                 } else {
+                     console.error('Element with ID "rzp-button1" not found');
+                 }
+                // Remaining code for Razorpay integration...
+            } else {
+                alert('The pincode you entered is not serviceable for some products in your cart.');
+            }
         }
     }
+
+
+    function getTotalBill() {
+        var totalBillElement = document.getElementById('totalBill');
+        if (totalBillElement) {
+            return parseFloat(totalBillElement.innerText.replace('$', ''))*100;
+        }
+        return 0;
+    }
+
+ 
 
         function checkout() {
             // Check if the user is logged in (you can use a session attribute to store login status)
             window.location.href = "login.html"; 
+            
         }
 
         function removeItem(productId) {
@@ -262,12 +341,6 @@ if (cartItems != null) {
                 console.error('Error removing item from cart:', error);
             });
         }
-     
-       
     </script>
 </body>
 </html>
-
-
-
-
